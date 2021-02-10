@@ -13,7 +13,7 @@ pub_topic = 'tjaru/hej/vadheterdu/status'
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
     print(f'Connected to {broker_ip}:{broker_port}, with result code: {str(rc)}')
-    msg_to_pub = client_id + " are online and listening to " + sub_topic
+    msg_to_pub = client_id + " is online and listening on topic: " + sub_topic
     client.publish(pub_topic, msg_to_pub, 2, True)
 
     # Subscribing in on_connect() means that if we lose the connection and
