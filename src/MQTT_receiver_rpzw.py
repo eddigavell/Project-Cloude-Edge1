@@ -1,40 +1,40 @@
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+import gpiozero
 
-# Client data
-client_id = 'RSPPI switch1'
-broker_ip = 'broker.mqttdashboard.com'
-broker_port = 1883
-
-# Topic data
-sub_topic = 'tjaru/hej/vadheterdu'
-pub_topic = 'tjaru/hej/vadheterdu/status'
+digital_out = gpiozero.DigitalOutputDevice(23, active_high=True, initial_value=False, pin_factory=None)
+MQTT_SERVER = "broker.mqttdashboard.com"
+MQTT_PORT = 1883
+sub_topic = 'tjaru/'
+pub_topic = 'tjaru/status'
 
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    print(f'Connected to {broker_ip}:{broker_port}, with result code: {str(rc)}')
-    msg_to_pub = client_id + " is online and listening on topic: " + sub_topic
-    client.publish(pub_topic, msg_to_pub, 2, True)
+    print(f'Connected to {MQTT_SERVER}:{MQTT_PORT} with result code ' + str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    client.subscribe("$SYS/#")
+    client.subscribe(sub_topic)
 
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(f'{msg.topic}: {str(msg.payload)}')
-    if msg.payload == 'katt'.encode():
-        print(f'Message was katt')
-    else:
-        print(f'Message was NOT katt')
+    print(msg.topic + ":" + str(msg.payload.decode()))
+    # more callbacks, etc
+    if msg.payload == 'LAMP ON'.encode():
+        digital_out.on()
+        publish.single(pub_topic, "LAMP IS ON!", 2, True, hostname=MQTT_SERVER)
+    elif msg.payload == 'Lamp off'.encode():
+        digital_out.off()
+        publish.single(pub_topic, "LAMP IS OFF!", 2, True, hostname=MQTT_SERVER)
 
 
-client = mqtt.Client(client_id, clean_session=True, userdata=None, protocol=mqtt.MQTTv311, transport="tcp")
+client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect(broker_ip, broker_port, 60)
-client.subscribe(sub_topic)
+
+client.connect(MQTT_SERVER, MQTT_PORT, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
